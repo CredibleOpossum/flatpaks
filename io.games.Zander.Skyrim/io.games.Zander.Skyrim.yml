@@ -1,0 +1,77 @@
+app-id: io.games.Zander.Skyrim
+sdk: org.freedesktop.Sdk
+runtime: org.freedesktop.Platform
+runtime-version: "22.08"
+base: org.winehq.Wine
+base-version: stable-22.08
+command: skyrim.sh
+tags:
+  - proprietary
+
+finish-args:
+  - --share=ipc
+  - --socket=pulseaudio
+  - --socket=x11
+  - --device=dri
+  - --allow=multiarch
+
+inherit-extensions:
+  - org.winehq.Wine.gecko
+  - org.winehq.Wine.mono
+  - org.winehq.Wine.DLLs
+  
+sdk-extensions:
+  - org.freedesktop.Sdk.Compat.i386
+  - org.freedesktop.Sdk.Extension.toolchain-i386
+
+add-extensions:
+  org.freedesktop.Platform.Compat.i386:
+    directory: lib/i386-linux-gnu
+    version: '22.08'
+
+  org.freedesktop.Platform.GL32:
+    directory: lib/i386-linux-gnu/GL
+    version: '1.4'
+    versions: 22.08;1.4
+    subdirectories: true
+    no-autodownload: true
+    autodelete: false
+    add-ld-path: lib
+    merge-dirs: vulkan/icd.d;glvnd/egl_vendor.d;OpenCL/vendors;lib/dri;lib/d3d;vulkan/explicit_layer.d
+    download-if: active-gl-driver
+    enable-if: active-gl-driver
+    
+modules:
+  - name: skyrim
+    buildsystem: simple
+    build-commands:
+      - mkdir /app/skyrim
+      - mv * /app/skyrim
+    sources:
+      - type: archive
+        dest-filename: TheGates_Linux_0.5.1.zip
+        path: files/TES - Skyrim - Anniversary Edition.zip
+  - name: wine
+    buildsystem: simple
+    build-commands:
+      - unzip prefix.zip -d /app/
+      - unzip runner.zip -d /app/
+    sources:
+      - type: file
+        path: files/prefix.zip
+      - type: file
+        path: files/runner.zip
+  - name: extra
+    buildsystem: simple
+    build-commands:
+      - install -Dm644 skyrim.desktop /app/share/applications/${FLATPAK_ID}.desktop
+      - install -Dm644 icon_512.png /app/share/icons/hicolor/512x512/apps/${FLATPAK_ID}.png
+      - install -D skyrim.sh /app/bin/
+      - ln -rs /var/data/ /app/prefix/drive_c/users/player/Documents
+    sources:
+      - type: file
+        path: skyrim.desktop
+      - type: file
+        path: icons/icon_512.png
+      - type: file
+        path: scripts/skyrim.sh
