@@ -49,7 +49,6 @@ modules:
       - mv * /app/skyrim
     sources:
       - type: archive
-        dest-filename: TheGates_Linux_0.5.1.zip
         path: files/TES - Skyrim - Anniversary Edition.zip
   - name: wine
     buildsystem: simple
