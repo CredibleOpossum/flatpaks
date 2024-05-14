@@ -1,0 +1,74 @@
+id: io.games.Zander.elonaplus
+sdk: org.freedesktop.Sdk
+runtime: org.freedesktop.Platform
+runtime-version: "23.08"
+command: run_game.sh
+tags:
+  - proprietary
+
+finish-args:
+  - --share=ipc
+  - --socket=pulseaudio
+  - --socket=x11
+  - --device=dri
+  - --allow=multiarch
+
+add-extensions:
+  org.freedesktop.Platform.Compat.i386:
+    directory: lib/i386-linux-gnu
+    version: '23.08'
+  
+modules:
+  - name: wine
+    buildsystem: simple
+    build-commands:
+      - install -Dm644 -t ${FLATPAK_DEST}/etc ld.so.conf # Make the container aware of the 32bit libraries. 
+      - mkdir -p ${FLATPAK_DEST}/{,lib/debug/}lib/i386-linux-gnu/GL
+
+      - mkdir /app/wine/
+      - mkdir /app/wine/runner
+      - mkdir /app/wine/prefix
+
+      - tar -xf wine-9.8-x86.tar.xz -C /app/wine/runner/ # Using an "archive" instead of "file" when asked for type dumps the files into a single directory, this makes organization easier.
+      - tar -xf wine_prefix.tar.xz -C /app/wine/prefix/
+    sources:
+      - type: file
+        path: wine/ld.so.conf
+      - type: file
+        path: wine/runner/wine-9.8-x86.tar.xz
+      - type: file
+        path: wine/prefix/wine_prefix.tar.xz
+  - name: game
+    buildsystem: simple
+    build-commands:
+      # Install game files
+      - mkdir /app/game/
+      - tar -xf elonaplus2.22.tar.xz -C /app/game/
+      - ln -s /app/game/ "/app/wine/prefix/wine_prefix/drive_c/Program Files/game"
+
+      # Allow writing to specific files/directories through symlinks
+      - rm -rf /app/game/elonaplus2.22/save
+      - rm -rf /app/game/elonaplus2.22/tmp
+      - rm /app/game/elonaplus2.22/server.txt
+      - rm /app/game/elonaplus2.22/config.txt
+
+      - ln -s /var/data/save /app/game/elonaplus2.22/save
+      - ln -s /var/data/tmp /app/game/elonaplus2.22/tmp
+      - ln -s /var/data/server.txt /app/game/elonaplus2.22/server.txt
+      - ln -s /var/data/config.txt /app/game/elonaplus2.22/config.txt
+    sources:
+      - type: file
+        path: game/elonaplus2.22.tar.xz
+  - name: desktop-assets
+    buildsystem: simple
+    build-commands:
+      - install -Dm644 elonaplus.desktop /app/share/applications/${FLATPAK_ID}.desktop
+      - install -Dm644 icon_512.png /app/share/icons/hicolor/512x512/apps/${FLATPAK_ID}.png
+      - install -D run_game.sh -D /app/bin/run_game.sh
+    sources:
+      - type: file
+        path: desktop-files/run_game.sh
+      - type: file
+        path: desktop-files/icons/icon_512.png
+      - type: file
+        path: desktop-files/elonaplus.desktop
